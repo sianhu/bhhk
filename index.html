@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Solana Chart + Axiom</title>
+  <style>
+    body {
+      background-color: #008080;
+      font-family: sans-serif;
+      margin: 2px;
+      padding: 0px;
+    }
+    input, button, a {
+      font-size: 10px;
+      padding: 2px;
+      margin-right: 2px;
+    }
+    #axiomLink {
+      display: none;
+    }
+    #price-chart-widget-container {
+      margin-top: 2px;
+      display: none;
+      height: 500px;
+    }
+    .centered-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px; /* optional: space between elements */
+      margin-top: 0px;
+      flex-wrap: wrap;  /* allows wrapping on small screens */
+    }
+  </style>
+</head>
+<body>
+
+  <div class="centered-container">
+    <input type="text" id="tokenAddress" placeholder="Enter Solana Token Address" style="width: 300px;">
+    <button onclick="handleLoad()">Load Chart</button>
+    <a id="axiomLink" href="#" target="_blank">Axiom</a>
+  </div>
+
+  <div id="price-chart-widget-container"></div>
+
+  <script>
+    let isChartScriptLoaded = false;
+
+    function loadChartScript(callback) {
+      if (isChartScriptLoaded) {
+        callback();
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.id = 'moralis-chart-widget';
+      script.src = 'https://moralis.com/static/embed/chart.js';
+      script.async = true;
+      script.onload = () => {
+        isChartScriptLoaded = true;
+        callback();
+      };
+      document.body.appendChild(script);
+    }
+
+    function renderChart(tokenAddress) {
+      const container = document.getElementById('price-chart-widget-container');
+      container.innerHTML = '';
+      container.style.display = 'block';
+
+      window.createMyWidget('price-chart-widget-container', {
+        autoSize: true,
+        chainId: 'solana',
+        tokenAddress,
+        showHoldersChart: true,
+        defaultInterval: '1',
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'Etc/UTC',
+        theme: 'moralis',
+        locale: 'en',
+        backgroundColor: '#071321',
+        gridColor: '#0d2035',
+        textColor: '#68738D',
+        candleUpColor: '#4CE666',
+        candleDownColor: '#E64C4C',
+        hideLeftToolbar: false,
+        hideTopToolbar: false,
+        hideBottomToolbar: false
+      });
+    }
+
+    async function fetchHighestVolumePair(tokenAddress) {
+      const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjgzYTU5Yzk5LTMwNDItNGI2YS04YjQ5LTBiYzRlMmY5MTQ2OSIsIm9yZ0lkIjoiNDQ3NDc4IiwidXNlcklkIjoiNDYwNDAzIiwidHlwZUlkIjoiMTBiOTMxZTEtMjNjNy00MWZmLWE3OTQtNWVhMGMyMmFiZTdhIiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NDc0NDE1NTAsImV4cCI6NDkwMzIwMTU1MH0.lQYmeMdY5NZeRqCJtcGf8Nwk_W9hzSJhVb9DEttWczw'; // Replace with your actual Moralis API key
+      const url = `https://solana-gateway.moralis.io/token/mainnet/${tokenAddress}/pairs`;
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch pairs');
+
+      const data = await response.json();
+
+      if (!data.pairs || data.pairs.length === 0) throw new Error('No pairs found');
+
+      return data.pairs.reduce((a, b) => (
+        b.volume24hrUsd > a.volume24hrUsd ? b : a
+      ));
+    }
+
+    function handleLoad() {
+      const tokenAddress = document.getElementById('tokenAddress').value.trim();
+      if (!tokenAddress) return;
+
+      loadChartScript(() => renderChart(tokenAddress));
+
+      fetchHighestVolumePair(tokenAddress)
+        .then(pair => {
+          const axiomLink = document.getElementById('axiomLink');
+          axiomLink.href = `https://axiom.trade/meme/${pair.pairAddress}`;
+          axiomLink.style.display = 'inline';
+        })
+        .catch(err => {
+          console.error('Error loading Axiom link:', err);
+          document.getElementById('axiomLink').style.display = 'none';
+        });
+    }
+
+    // --- NEW FEATURE: Read token from URL ---
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      if (token) {
+        const input = document.getElementById('tokenAddress');
+        input.value = token;
+        handleLoad();
+      }
+    });
+  </script>
+
+</body>
+</html>
