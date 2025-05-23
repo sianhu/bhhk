@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Solana Charts (2 Tokens)</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    body {
+      background-color: #008080;
+      font-family: sans-serif;
+      margin: 2px;
+      padding: 0px;
+    }
+
+    input, button, a {
+      font-size: 10px;
+      padding: 2px;
+      margin-right: 2px;
+    }
+
+    #axiomLink1, #axiomLink2 {
+      display: none;
+    }
+
+    .top-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      margin-bottom: 2px;
+    }
+
+    .main-layout {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 5px;
+      flex-wrap: nowrap;
+      width: 100%;
+      margin-top: 0px
+    }
+
+    .input-section {
+      flex: 1;
+      min-width: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: flex 0.3s ease;
+    }
+
+    .input-section.full-width {
+      flex: 1 0 100%;
+      max-width: 100%;
+    }
+
+    .input-section.half-width {
+      flex: 0 0 50%;
+      max-width: 50%;
+    }
+
+    .chart-section {
+      flex: 1;
+      min-width: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: flex 0.3s ease;
+      margin-top: 0px
+    }
+
+    .chart-section.full-width {
+      flex: 1 0 100%;
+      max-width: 100%;
+    }
+
+    .chart-section.half-width {
+      flex: 0 0 50%;
+      max-width: 50%;
+    }
+
+    .left-panel {
+      flex: 2;
+      min-width: 400px;
+      width: 100%;
+    }
+
+    #price-chart-widget-container1, #price-chart-widget-container2 {
+      height: 500px;
+      width: 100%;
+    }
+
+    .right-panel {
+      flex: 0.2;  // 0.1 means right panel takes up 10% of space relative to left panel 
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      padding: 2px;
+    }
+
+    .chart-container {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    canvas#distributionChart1, canvas#distributionChart2 {
+      max-width: 240px;  /* Increased from 200px to allow larger charts */
+      height: 180px;
+    }
+
+    canvas#distributionLineChart1, canvas#distributionLineChart2 {
+      max-width: 240px; /* Increased from 200px to allow larger charts */
+      height: 240px;
+    }
+
+    canvas#acquisitionChart1, canvas#acquisitionChart2 {
+      max-width: 240px; /* Increased from 200px to allow larger charts */
+      height: 165px;
+    }
+
+    canvas {
+      transition: opacity 0.5s ease;
+    }
+
+    canvas.updating {
+      opacity: 0.5;
+    }
+
+    .controls {
+      color: white;
+      font-size: 10px;
+    }
+
+    .controls select, .controls button {
+      margin-left: 2px;
+      font-size: 10px;
+      padding: 2px;
+    }
+
+    #pauseButton1, #pauseButton2 {
+      font-size: 14px;
+      line-height: 1;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: white;
+    }
+
+    #pauseButton1:hover, #pauseButton2:hover {
+      opacity: 0.8;
+    }
+
+    .input-container {
+      display: flex;
+      gap: 2px;
+      align-items: center;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+
+    #togglePanelsButton {
+      font-size: 9px;
+      padding: 1px;
+      cursor: pointer;
+    }
+
+    .clear-button {
+      position: absolute;
+      right: 2px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      font-size: 10px;
+      cursor: pointer;
+      color: #aaa;
+      padding: 0 5px;
+      line-height: 1;
+      display: none;
+    }
+
+    .clear-button.visible {
+      display: block;
+    }
+
+    input[type="text"] {
+      padding-right: 25px;
+      width: 300px;
+      box-sizing: border-box;
+      font-size: 10px;
+      padding: 2px;
+    }
+
+    .error-message {
+      color: #ff6666;
+      font-size: 10px;
+      margin-top: 2px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="top-container">
+  <div class="main-layout">
+    <div class="input-section full-width" id="inputSection1">
+      <div class="input-container">
+        <div class="input-wrapper">
+          <input type="text" id="tokenAddress1" placeholder="Enter Solana Token Address">
+          <button class="clear-button" id="clearButton1" onclick="clearInput(1)">✕</button>
+        </div>
+        <a id="axiomLink1" href="#" target="_blank">Axiom</a>
+      </div>
+      <div class="error-message" id="errorMessage1"></div>
+    </div>
+    <div class="input-section" id="inputSection2" style="display: none;">
+      <div class="input-container">
+        <div class="input-wrapper">
+          <input type="text" id="tokenAddress2" placeholder="Enter Solana Token Address">
+          <button class="clear-button" id="clearButton2" onclick="clearInput(2)">✕</button>
+        </div>
+        <a id="axiomLink2" href="#" target="_blank">Axiom</a>
+      </div>
+      <div class="error-message" id="errorMessage2"></div>
+    </div>
+  </div>
+  <button id="togglePanelsButton" onclick="togglePanels()">2Tokens</button> 
+</div>
+
+<div class="main-layout">
+  <div class="chart-section full-width" id="chartSection1">
+    <div class="main-layout">
+      <div class="left-panel">
+        <div id="price-chart-widget-container1"></div>
+      </div>
+      <div class="right-panel" id="rightPanel1">
+        <div class="chart-container controls">
+          Auto Refresh:
+          <select id="refreshInterval1" onchange="updateRefreshInterval(1)">
+            <option value="60000">1m</option>
+            <option value="5000">5s</option>
+            <option value="15000">15s</option>
+            <option value="30000">30s</option>
+            <option value="120000">2m</option>
+            <option value="300000">5m</option>
+          </select>
+          <button id="pauseButton1" onclick="togglePause(1)" title="Pause Auto-Refresh">
+            <i class="fas fa-pause"></i>
+          </button>
+          <span id="countdownDisplay1" style="margin-left: 5px;">Next update in: --s</span>
+        </div>
+        <div class="chart-container">
+          <canvas id="distributionChart1"></canvas>
+        </div>
+        <div class="chart-container">
+          <canvas id="distributionLineChart1"></canvas>
+        </div>
+        <div class="chart-container">
+          <canvas id="acquisitionChart1"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-section" id="chartSection2" style="display: none;">
+    <div class="main-layout">
+      <div class="left-panel">
+        <div id="price-chart-widget-container2"></div>
+      </div>
+      <div class="right-panel" id="rightPanel2">
+        <div class="chart-container controls">
+          Auto Refresh:
+          <select id="refreshInterval2" onchange="updateRefreshInterval(2)">
+            <option value="60000">1m</option>
+            <option value="5000">5s</option>
+            <option value="15000">15s</option>
+            <option value="30000">30s</option>
+            <option value="120000">2m</option>
+            <option value="300000">5m</option>
+          </select>
+          <button id="pauseButton2" onclick="togglePause(2)" title="Pause Auto-Refresh">
+            <i class="fas fa-pause"></i>
+          </button>
+          <span id="countdownDisplay2" style="margin-left: 5px;">Next update in: --s</span>
+        </div>
+        <div class="chart-container">
+          <canvas id="distributionChart2"></canvas>
+        </div>
+        <div class="chart-container">
+          <canvas id="distributionLineChart2"></canvas>
+        </div>
+        <div class="chart-container">
+          <canvas id="acquisitionChart2"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let isChartScriptLoaded = false;
+  let isTwoPanels = false;
+  let charts = {
+    1: {
+      distributionChart: null,
+      acquisitionChart: null,
+      distributionLineChart: null,
+      lastHolderDistribution: null,
+      lastHoldersByAcquisition: null,
+      currentTokenAddress: '',
+      refreshTimer: null,
+      isPaused: false,
+      countdown: 0,
+      countdownTimer: null,
+      countsHistory: [],
+      datasetVisibility: []
+    },
+    2: {
+      distributionChart: null,
+      acquisitionChart: null,
+      distributionLineChart: null,
+      lastHolderDistribution: null,
+      lastHoldersByAcquisition: null,
+      currentTokenAddress: '',
+      refreshTimer: null,
+      isPaused: false,
+      countdown: 0,
+      countdownTimer: null,
+      countsHistory: [],
+      datasetVisibility: []
+    }
+  };
+
+  function showError(id, message) {
+    const errorDiv = document.getElementById(`errorMessage${id}`);
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+  }
+
+  function clearError(id) {
+    const errorDiv = document.getElementById(`errorMessage${id}`);
+    errorDiv.textContent = '';
+    errorDiv.style.display = 'none';
+  }
+
+  function loadChartScript(callback) {
+    if (isChartScriptLoaded) {
+      callback();
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://moralis.com/static/embed/chart.js';
+    script.async = true;
+    script.onload = () => {
+      isChartScriptLoaded = true;
+      callback();
+    };
+    script.onerror = () => {
+      console.error('Failed to load Moralis chart script');
+    };
+    document.body.appendChild(script);
+  }
+
+  function renderChart(tokenAddress, id) {
+    const container = document.getElementById(`price-chart-widget-container${id}`);
+    container.innerHTML = '';
+    container.style.display = 'block';
+    try {
+      window.createMyWidget(`price-chart-widget-container${id}`, {
+        autoSize: true,
+        chainId: 'solana',
+        tokenAddress,
+        showHoldersChart: true,
+        defaultInterval: '1',
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'Etc/UTC',
+        theme: 'moralis',
+        locale: 'en',
+        backgroundColor: '#071321',
+        gridColor: '#0d2035',
+        textColor: '#68738D',
+        candleUpColor: '#4CE666',
+        candleDownColor: '#E64C4C',
+        hideLeftToolbar: false,
+        hideTopToolbar: false,
+        hideBottomToolbar: true
+      });
+    } catch (error) {
+      console.error(`Error rendering price chart for token ${id}:`, error);
+      showError(id, 'Failed to load price chart');
+    }
+  }
+
+  async function fetchTokenInfo(tokenAddress, id) {
+    const url = `https://solana-gateway.moralis.io/token/mainnet/holders/${tokenAddress}`;
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'accept': 'application/json',
+          'X-API-Key': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjgzYTU5Yzk5LTMwNDItNGI2YS04YjQ5LTBiYzRlMmY5MTQ2OSIsIm9yZ0lkIjoiNDQ3NDc4IiwidXNlcklkIjoiNDYwNDAzIiwidHlwZUlkIjoiMTBiOTMxZTEtMjNjNy00MWZmLWE3OTQtNWVhMGMyMmFiZTdhIiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NDc0NDE1NTAsImV4cCI6NDkwMzIwMTU1MH0.lQYmeMdY5NZeRqCJtcGf8Nwk_W9hzSJhVb9DEttWczw'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const data = await response.json();
+
+      if (!data.holderDistribution || !data.holdersByAcquisition) {
+        throw new Error('Invalid or empty data returned from API');
+      }
+
+      clearError(id);
+      const { holdersByAcquisition, holderDistribution } = data;
+      document.getElementById(`rightPanel${id}`).style.display = 'flex';
+
+      const distLabels = Object.keys(holderDistribution);
+      const distCounts = Object.values(holderDistribution);
+      const acqLabels = Object.keys(holdersByAcquisition);
+      const acqCounts = Object.values(holdersByAcquisition);
+
+      if (distLabels.length === 0 || acqLabels.length === 0) {
+        throw new Error('No holder distribution or acquisition data available');
+      }
+
+      const isSameDistribution = JSON.stringify(distCounts) === JSON.stringify(charts[id].lastHolderDistribution);
+      const isSameAcquisition = JSON.stringify(acqCounts) === JSON.stringify(charts[id].lastHoldersByAcquisition);
+
+      if (isSameDistribution && isSameAcquisition) return;
+
+      charts[id].lastHolderDistribution = distCounts;
+      charts[id].lastHoldersByAcquisition = acqCounts;
+
+      const distTotal = distCounts.reduce((a, b) => a + b, 0);
+      const distPercents = distCounts.map(c => ((c / distTotal) * 100).toFixed(2));
+      const distCanvas = document.getElementById(`distributionChart${id}`);
+
+      const lineColors = [
+        '#FF0000', // Red
+        '#00FF00', // Green
+        '#0000FF', // Blue
+        '#FF00FF', // Magenta
+        '#FFFF00', // Yellow
+        '#00FFFF', // Cyan
+        '#FFA500'  // Orange
+      ];
+
+      distCanvas.classList.add('updating');
+      setTimeout(() => {
+        try {
+          if (charts[id].distributionChart) charts[id].distributionChart.destroy();
+          charts[id].distributionChart = new Chart(distCanvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+              labels: distLabels,
+              datasets: [{
+                label: 'Holder %',
+                data: distPercents,
+                backgroundColor: distLabels.map((_, i) => lineColors[i % lineColors.length]) // Use same colors as line chart
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              aspectRatio: 0.5,
+              animation: false,
+              plugins: {
+                title: {
+                  display: false,
+                  text: 'Holder Distribution (Percent)',
+                  color: '#ffffff'
+                },
+                legend: {
+                  labels: {
+                    color: '#ffffff',
+                    font: { size: 10 },
+                    boxWidth: 0,
+                    boxHeight: 0,
+                    padding: 5
+                  }
+                },
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      const percent = context.raw;
+                      const index = context.dataIndex;
+                      const count = distCounts[index];
+                      return `${context.label}: ${count} (${percent}%)`;
+                    }
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  max: 50,
+                  ticks: { color: '#ffffff' },
+                  title: { display: true, text: 'Percentage (%)', color: '#ffffff' }
+                },
+                x: { ticks: { color: '#ffffff' } }
+              }
+            }
+          });
+          distCanvas.classList.remove('updating');
+        } catch (error) {
+          console.error(`Error rendering distribution chart for token ${id}:`, error);
+          distCanvas.classList.remove('updating');
+        }
+      }, 200);
+
+      const now = new Date().toLocaleTimeString();
+      charts[id].countsHistory.push({
+        time: now,
+        counts: distCounts
+      });
+
+      if (charts[id].countsHistory.length > 30) {
+        charts[id].countsHistory.shift();
+      }
+
+      const timeLabels = charts[id].countsHistory.map(entry => entry.time);
+      const datasets = distLabels.map((label, i) => ({
+        label,
+        data: charts[id].countsHistory.map(entry => entry.counts[i]),
+        fill: false,
+        borderColor: lineColors[i % lineColors.length],
+        tension: 0.2,
+        borderWidth: 2, // This sets the line thickness
+        pointRadius: 1, // 0=No circles on data points
+        pointHoverRadius: 6, //hover sizeon on data points
+        hidden: charts[id].datasetVisibility[i] !== undefined ? charts[id].datasetVisibility[i] : i >= 3
+      }));
+
+      const lineCanvas = document.getElementById(`distributionLineChart${id}`);
+      lineCanvas.classList.add('updating');
+
+      setTimeout(() => {
+        try {
+          if (charts[id].distributionLineChart) charts[id].distributionLineChart.destroy();
+          charts[id].distributionLineChart = new Chart(lineCanvas.getContext('2d'), {
+            type: 'line',
+            data: {
+              labels: timeLabels,
+              datasets: datasets
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              animation: false,
+              plugins: {
+                title: {
+                  display: false,
+                  text: 'Holder Counts vs Time',
+                  color: '#ffffff'
+                },
+                legend: {
+                  labels: {
+                    color: '#ffffff',
+                    font: { size: 12 },
+                    boxWidth: 8,
+                    boxHeight: 8,
+                    padding: 5
+                  },
+                  onClick: (e, legendItem, legend) => {
+                    const index = legendItem.datasetIndex;
+                    const chart = legend.chart;
+                    const meta = chart.getDatasetMeta(index);
+                    meta.hidden = meta.hidden === null ? !chart.data.datasets[index].hidden : null;
+                    charts[id].datasetVisibility[index] = meta.hidden;
+                    chart.update();
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: { color: '#ffffff' },
+                  title: { display: true, text: 'Holder Count', color: '#ffffff' }
+                },
+                x: {
+                  ticks: {
+                    display: false,
+                    color: '#ffffff'
+                  },
+                  grid: {
+                    display: true
+                  }
+                }
+              }
+            }
+          });
+          lineCanvas.classList.remove('updating');
+        } catch (error) {
+          console.error(`Error rendering line chart for token ${id}:`, error);
+          lineCanvas.classList.remove('updating');
+        }
+      }, 100);
+
+      const acqTotal = acqCounts.reduce((a, b) => a + b, 0);
+      const acqPercents = acqCounts.map(c => ((c / acqTotal) * 100).toFixed(2));
+      const pieColors = ['#FFD700', '#00FFFF', '#FF69B4'];
+      const acqCanvas = document.getElementById(`acquisitionChart${id}`);
+
+      acqCanvas.classList.add('updating');
+      setTimeout(() => {
+        try {
+          if (charts[id].acquisitionChart) charts[id].acquisitionChart.destroy();
+          charts[id].acquisitionChart = new Chart(acqCanvas.getContext('2d'), {
+            type: 'pie',
+            data: {
+              labels: acqLabels.map((label, i) => `${label} (${acqPercents[i]}%)`),
+              datasets: [{
+                data: acqCounts,
+                backgroundColor: pieColors
+              }]
+            },
+            options: {
+              responsive: true,
+              animation: false,
+              plugins: {
+                title: {
+                  display: false,
+                  text: 'Holders by Acquisition',
+                  color: '#ffffff'
+                },
+                legend: {
+                  labels: {
+                    color: '#ffffff',
+                    font: { size: 12 },
+                    boxWidth: 10,
+                    boxHeight: 10,
+                    padding: 4
+                  }
+                },
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      const count = context.raw;
+                      const percent = ((count / acqTotal) * 100).toFixed(2);
+                      return `${context.label}: ${count} (${percent}%)`;
+                    }
+                  }
+                }
+              }
+            }
+          });
+          acqCanvas.classList.remove('updating');
+        } catch (error) {
+          console.error(`Error rendering acquisition chart for token ${id}:`, error);
+          acqCanvas.classList.remove('updating');
+        }
+      }, 200);
+
+    } catch (error) {
+      console.error(`Error fetching data for token ${id}:`, error);
+      showError(id, `Failed to load charts: ${error.message}`);
+      document.getElementById(`rightPanel${id}`).style.display = 'none';
+    }
+  }
+  async function fetchHighestVolumePair(tokenAddress, id) {
+    const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjgzYTU5Yzk5LTMwNDItNGI2YS04YjQ5LTBiYzRlMmY5MTQ2OSIsIm9yZ0lkIjoiNDQ3NDc4IiwidXNlcklkIjoiNDYwNDAzIiwidHlwZUlkIjoiMTBiOTMxZTEtMjNjNy00MWZmLWE3OTQtNWVhMGMyMmFiZTdhIiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NDc0NDE1NTAsImV4cCI6NDkwMzIwMTU1MH0.lQYmeMdY5NZeRqCJtcGf8Nwk_W9hzSJhVb9DEttWczw';
+    const url = `https://solana-gateway.moralis.io/token/mainnet/${tokenAddress}/pairs`;
+
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'accept': 'application/json',
+          'X-API-Key': apiKey
+        }
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      const data = await response.json();
+      if (!data.pairs || data.pairs.length === 0) throw new Error('No pairs found');
+
+      const pair = data.pairs.reduce((a, b) => (
+        b.volume24hrUsd > a.volume24hrUsd ? b : a
+      ));
+      const axiomLink = document.getElementById(`axiomLink${id}`);
+      axiomLink.href = `https://axiom.trade/meme/${pair.pairAddress}`;
+      axiomLink.style.display = 'inline';
+    } catch (err) {
+      console.error(`Error loading Axiom link for token ${id}:`, err);
+      document.getElementById(`axiomLink${id}`).style.display = 'none';
+    }
+  }
+
+  function handleLoad(id) {
+    const tokenAddress = document.getElementById(`tokenAddress${id}`).value.trim();
+    clearError(id);
+
+    if (!tokenAddress) {
+      if (charts[id].distributionChart) charts[id].distributionChart.destroy();
+      if (charts[id].distributionLineChart) charts[id].distributionLineChart.destroy();
+      if (charts[id].acquisitionChart) charts[id].acquisitionChart.destroy();
+      if (charts[id].refreshTimer) clearInterval(charts[id].refreshTimer);
+      if (charts[id].countdownTimer) clearInterval(charts[id].countdownTimer);
+      charts[id] = {
+        distributionChart: null,
+        acquisitionChart: null,
+        distributionLineChart: null,
+        lastHolderDistribution: null,
+        lastHoldersByAcquisition: null,
+        currentTokenAddress: '',
+        refreshTimer: null,
+        isPaused: false,
+        countdown: 0,
+        countdownTimer: null,
+        countsHistory: [],
+        datasetVisibility: []
+      };
+      document.getElementById(`axiomLink${id}`).style.display = 'none';
+      document.getElementById(`rightPanel${id}`).style.display = 'none';
+      document.getElementById(`price-chart-widget-container${id}`).innerHTML = '';
+      return;
+    }
+
+    charts[id].currentTokenAddress = tokenAddress;
+    charts[id].datasetVisibility = []; // Reset visibility array
+    loadChartScript(() => renderChart(tokenAddress, id));
+    fetchTokenInfo(tokenAddress, id);
+    fetchHighestVolumePair(tokenAddress, id);
+    updateRefreshInterval(id);
+  }
+
+  function refreshCharts(id) {
+    if (!charts[id].isPaused && charts[id].currentTokenAddress) {
+      fetchTokenInfo(charts[id].currentTokenAddress, id);
+    }
+  }
+
+  function updateRefreshInterval(id) {
+    const interval = parseInt(document.getElementById(`refreshInterval${id}`).value);
+    if (charts[id].refreshTimer) clearInterval(charts[id].refreshTimer);
+    if (charts[id].countdownTimer) clearInterval(charts[id].countdownTimer);
+
+    charts[id].refreshTimer = setInterval(() => refreshCharts(id), interval);
+    charts[id].countdown = interval / 1000;
+    updateCountdownDisplay(id);
+
+    charts[id].countdownTimer = setInterval(() => {
+      if (!charts[id].isPaused) {
+        charts[id].countdown--;
+        if (charts[id].countdown <= 0) charts[id].countdown = interval / 1000;
+        updateCountdownDisplay(id);
+      }
+    }, 1000);
+  }
+
+  function updateCountdownDisplay(id) {
+    document.getElementById(`countdownDisplay${id}`).textContent =
+      `Update in: ${charts[id].countdown}s`;
+  }
+
+  function togglePause(id) {
+    charts[id].isPaused = !charts[id].isPaused;
+    const pauseBtn = document.getElementById(`pauseButton${id}`);
+    const icon = pauseBtn.querySelector('i');
+
+    if (charts[id].isPaused) {
+      icon.classList.remove('fa-pause');
+      icon.classList.add('fa-play');
+      pauseBtn.title = 'Resume Auto-Refresh';
+    } else {
+      icon.classList.remove('fa-play');
+      icon.classList.add('fa-pause');
+      pauseBtn.title = 'Pause Auto-Refresh';
+    }
+
+    updateCountdownDisplay(id);
+  }
+
+  function togglePanels() {
+    isTwoPanels = !isTwoPanels;
+    const inputSection1 = document.getElementById('inputSection1');
+    const inputSection2 = document.getElementById('inputSection2');
+    const chartSection1 = document.getElementById('chartSection1');
+    const chartSection2 = document.getElementById('chartSection2');
+    const toggleButton = document.getElementById('togglePanelsButton');
+
+    if (isTwoPanels) {
+      inputSection1.classList.remove('full-width');
+      inputSection1.classList.add('half-width');
+      inputSection2.classList.add('half-width');
+      inputSection2.style.display = 'flex';
+      chartSection1.classList.remove('full-width');
+      chartSection1.classList.add('half-width');
+      chartSection2.classList.add('half-width');
+      chartSection2.style.display = 'flex';
+      toggleButton.textContent = '1Token';
+      const token2 = document.getElementById('tokenAddress2').value.trim();
+      if (token2) {
+        handleLoad(2);
+      }
+    } else {
+      inputSection1.classList.remove('half-width');
+      inputSection1.classList.add('full-width');
+      inputSection2.classList.remove('half-width');
+      inputSection2.style.display = 'none';
+      chartSection1.classList.remove('half-width');
+      chartSection1.classList.add('full-width');
+      chartSection2.classList.remove('half-width');
+      chartSection2.style.display = 'none';
+      toggleButton.textContent = '2Tokens';
+      if (charts[2].distributionChart) charts[2].distributionChart.destroy();
+      if (charts[2].distributionLineChart) charts[2].distributionLineChart.destroy();
+      if (charts[2].acquisitionChart) charts[2].acquisitionChart.destroy();
+      if (charts[2].refreshTimer) clearInterval(charts[2].refreshTimer);
+      if (charts[2].countdownTimer) clearInterval(charts[2].countdownTimer);
+      charts[2] = {
+        distributionChart: null,
+        acquisitionChart: null,
+        distributionLineChart: null,
+        lastHolderDistribution: null,
+        lastHoldersByAcquisition: null,
+        currentTokenAddress: '',
+        refreshTimer: null,
+        isPaused: false,
+        countdown: 0,
+        countdownTimer: null,
+        countsHistory: [],
+        datasetVisibility: []
+      };
+      document.getElementById('tokenAddress2').value = '';
+      document.getElementById('clearButton2').classList.remove('visible');
+      document.getElementById('axiomLink2').style.display = 'none';
+      document.getElementById('rightPanel2').style.display = 'none';
+      document.getElementById('price-chart-widget-container2').innerHTML = '';
+      clearError(2);
+    }
+  }
+
+  function clearInput(id) {
+    const input = document.getElementById(`tokenAddress${id}`);
+    input.value = '';
+    input.dispatchEvent(new Event('input'));
+    document.getElementById(`clearButton${id}`).classList.remove('visible');
+  }
+
+  function handleInput(id) {
+    const input = document.getElementById(`tokenAddress${id}`);
+    const clearButton = document.getElementById(`clearButton${id}`);
+    if (input.value.trim()) {
+      clearButton.classList.add('visible');
+      handleLoad(id);
+    } else {
+      clearButton.classList.remove('visible');
+      handleLoad(id);
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (token) {
+      document.getElementById('tokenAddress1').value = token;
+      document.getElementById('clearButton1').classList.add('visible');
+      handleLoad(1);
+    }
+
+    [1, 2].forEach(id => {
+      const input = document.getElementById(`tokenAddress${id}`);
+      if (input) {
+        input.addEventListener('input', () => handleInput(id));
+      } else {
+        console.error(`Input element tokenAddress${id} not found`);
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
